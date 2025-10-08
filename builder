@@ -1271,6 +1271,142 @@
             color: #495057;
             line-height: 1.5;
         }
+
+        /* Stage Progress Bar */
+        .stage-progress-bar {
+            background: white;
+            border-bottom: 1px solid #e1e4e8;
+            padding: 20px 40px;
+            overflow-x: auto;
+        }
+
+        .stage-progress-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: max-content;
+        }
+
+        .stage-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .stage-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .stage-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid #e1e4e8;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: #999;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .stage-item.has-nodes .stage-circle {
+            border-color: #2d5f8d;
+            background: #e6f0f8;
+            color: #2d5f8d;
+        }
+
+        .stage-item.active .stage-circle {
+            border-color: #059669;
+            background: #059669;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        .stage-item.completed .stage-circle {
+            border-color: #059669;
+            background: #059669;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(5, 150, 105, 0.1); }
+        }
+
+        .stage-label {
+            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .stage-item.has-nodes .stage-label {
+            color: #2d5f8d;
+            font-weight: 600;
+        }
+
+        .stage-item.active .stage-label {
+            color: #059669;
+        }
+
+        .stage-connector {
+            width: 40px;
+            height: 3px;
+            background: #e1e4e8;
+            margin-bottom: 30px;
+        }
+
+        .stage-connector.active {
+            background: #2d5f8d;
+        }
+
+        .stage-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .stage-item:hover .stage-tooltip {
+            opacity: 1;
+        }
+
+        .stage-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -1336,6 +1472,9 @@
                     <button class="export-btn" id="exportBtn">Export HTML</button>
                     <button class="export-btn" id="embedBtn" style="background: #6366f1;">Get Embed Code</button>
                 </div>
+            </div>
+            <div class="stage-progress-bar" id="stageProgressBar" style="display: none;">
+                <div class="stage-progress-container"></div>
             </div>
             <div class="preview-content">
                 <div class="flowchart-preview">
@@ -1770,13 +1909,22 @@
 
             const connectionItems = document.querySelectorAll('.connection-item');
             connectionItems.forEach(item => {
-                const inputField = item.querySelector('input');
+                const inputs = item.querySelectorAll('input');
                 const selectField = item.querySelector('select');
                 const target = selectField ? selectField.value : '';
                 
                 if (target) {
-                    const label = inputField ? inputField.value.trim() : '';
-                    nodeData.connections.push({ label, target });
+                    let label = '';
+                    let description = '';
+                    
+                    if (nodeData.type === 'decision') {
+                        label = inputs[0] ? inputs[0].value.trim() : '';
+                        description = inputs[1] ? inputs[1].value.trim() : '';
+                    } else {
+                        description = inputs[0] ? inputs[0].value.trim() : '';
+                    }
+                    
+                    nodeData.connections.push({ label, target, description });
                 }
             });
 
@@ -1799,25 +1947,31 @@
             saveToLocalStorage();
         });
 
-        function addConnectionField(label = '', target = '') {
+        function addConnectionField(label = '', target = '', description = '') {
             const container = document.getElementById('connectionsList');
             const item = document.createElement('div');
             item.className = 'connection-item';
+            item.style.flexDirection = 'column';
+            item.style.gap = '8px';
             
             const nodeType = document.getElementById('nodeType').value;
             
             item.innerHTML = `
-                ${nodeType === 'decision' ? 
-                    `<input type="text" placeholder="Branch name (e.g., Yes, Approved)" value="${label}" required>` : 
-                    ''}
-                <select>
-                    <option value="">Select next node...</option>
-                    ${nodes.filter(n => n.id !== editingNodeId).map(n => 
-                        `<option value="${n.id}" ${n.id === target ? 'selected' : ''}>${n.title}</option>`
-                    ).join('')}
-                    <option value="END" ${target === 'END' ? 'selected' : ''}>END</option>
-                </select>
-                <button type="button" class="remove-connection">×</button>
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    ${nodeType === 'decision' ? 
+                        `<input type="text" placeholder="Branch name (e.g., Yes, Approved)" value="${label}" required style="flex: 1;">` : 
+                        ''}
+                    <select style="flex: 2;">
+                        <option value="">Select next node...</option>
+                        ${nodes.filter(n => n.id !== editingNodeId).map(n => 
+                            `<option value="${n.id}" ${n.id === target ? 'selected' : ''}>${n.title}</option>`
+                        ).join('')}
+                        <option value="END" ${target === 'END' ? 'selected' : ''}>END</option>
+                    </select>
+                    <button type="button" class="remove-connection">×</button>
+                </div>
+                <input type="text" placeholder="Optional: Describe when this path is taken..." value="${description}" 
+                    style="width: 100%; font-size: 13px; font-style: italic; color: #666;">
             `;
 
             item.querySelector('.remove-connection').addEventListener('click', () => {
@@ -1884,10 +2038,14 @@
                     <div class="node-connections">
                         ${node.connections.length > 0 ? 
                             node.connections.map(c => {
+                                const targetNode = nodes.find(n => n.id === c.target);
+                                const targetNumber = targetNode ? `[${targetNode.calculatedNumber || '?'}]` : '';
+                                const targetTitle = getNodeTitle(c.target);
+                                
                                 if (node.type === 'decision') {
-                                    return `→ <strong>${c.label}</strong>: ${getNodeTitle(c.target)}`;
+                                    return `→ <strong>${c.label}</strong>: ${targetNumber} ${targetTitle}`;
                                 } else {
-                                    return `→ ${c.label ? c.label + ': ' : ''}${getNodeTitle(c.target)}`;
+                                    return `→ ${c.label ? c.label + ': ' : ''}${targetNumber} ${targetTitle}`;
                                 }
                             }).join('<br>') 
                             : 'No connections'}
@@ -2003,7 +2161,7 @@
             
             document.getElementById('connectionsList').innerHTML = '';
             node.connections.forEach(conn => {
-                addConnectionField(conn.label, conn.target);
+                addConnectionField(conn.label, conn.target, conn.description || '');
             });
 
             if (node.connections.length === 0) {
@@ -2149,7 +2307,81 @@
             draggedNodeId = null;
         }
 
+        function renderStageProgress() {
+            const container = document.querySelector('.stage-progress-container');
+            if (!container) return;
+            
+            const progressBar = document.getElementById('stageProgressBar');
+            
+            // Only show in diagram mode
+            if (previewMode !== 'diagram' || nodes.length === 0) {
+                progressBar.style.display = 'none';
+                return;
+            }
+            
+            progressBar.style.display = 'block';
+            
+            // Count nodes per stage
+            const stageCounts = {};
+            stages.forEach(stage => stageCounts[stage] = 0);
+            nodes.forEach(node => {
+                const stage = node.stage || 'General';
+                stageCounts[stage]++;
+            });
+            
+            // Determine current stage (most recent selected node's stage)
+            const currentNode = nodes.find(n => n.id === selectedNodeId);
+            const currentStage = currentNode ? (currentNode.stage || 'General') : null;
+            
+            // Determine completed stages (before current)
+            const currentStageIndex = stages.indexOf(currentStage);
+            
+            let html = '';
+            stages.forEach((stage, index) => {
+                const count = stageCounts[stage];
+                const hasNodes = count > 0;
+                const isActive = stage === currentStage;
+                const isCompleted = currentStageIndex > -1 && index < currentStageIndex && hasNodes;
+                
+                // Add connector line (except before first)
+                if (index > 0) {
+                    const connectorActive = hasNodes && stageCounts[stages[index - 1]] > 0;
+                    html += `<div class="stage-connector ${connectorActive ? 'active' : ''}"></div>`;
+                }
+                
+                // Stage item
+                html += `
+                    <div class="stage-item ${hasNodes ? 'has-nodes' : ''} ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}" 
+                        data-stage="${stage}"
+                        onclick="filterByStage('${stage}')">
+                        <div class="stage-circle">
+                            ${isCompleted ? '✓' : (index + 1)}
+                            ${hasNodes ? `<span class="stage-count">${count}</span>` : ''}
+                        </div>
+                        <div class="stage-label">${stage}</div>
+                        <div class="stage-tooltip">${count} node${count !== 1 ? 's' : ''} in ${stage}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Add filter by stage function
+        window.filterByStage = function(stage) {
+            document.getElementById('filterStage').value = stage;
+            applyFilters();
+            
+            // Switch to static or diagram view if in interactive
+            if (previewMode === 'interactive') {
+                document.getElementById('diagramModeBtn').click();
+            }
+            
+            showToast(`Filtered to ${stage} stage`, 'info');
+        };
+
         function updatePreview() {
+            renderStageProgress();
             const previewBanner = document.getElementById('previewBanner');
             const previewNode = document.getElementById('previewNode');
 
@@ -2235,6 +2467,7 @@
                                     <span class="flow-connection-label">${conn.label}</span>
                                     <span class="flow-connection-arrow">→</span>
                                     <span class="flow-connection-target">${targetNumber ? '['+targetNumber+'] ' : ''}${targetTitle}</span>
+                                    ${conn.description ? `<div style="font-size: 11px; color: #888; font-style: italic; margin-top: 4px;">${conn.description}</div>` : ''}
                                 </div>
                             `;
                         } else {
