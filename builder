@@ -1407,6 +1407,37 @@
             align-items: center;
             justify-content: center;
         }
+
+        .stage-clear-filter {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 8px 16px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+        }
+
+        .stage-clear-filter:hover {
+            background: #b91c1c;
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+        }
+
+        .stage-progress-bar {
+            background: white;
+            border-bottom: 1px solid #e1e4e8;
+            padding: 20px 40px;
+            overflow-x: auto;
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -2365,6 +2396,15 @@
             });
             
             container.innerHTML = html;
+
+            const hasStageFilter = activeFilters.stage !== '';
+            if (hasStageFilter) {
+                const clearBtn = document.createElement('button');
+                clearBtn.className = 'stage-clear-filter';
+                clearBtn.innerHTML = '✕ Clear Filter';
+                clearBtn.onclick = clearStageFilter;
+                container.appendChild(clearBtn);
+            }
         }
 
         // Add filter by stage function
@@ -2378,6 +2418,13 @@
             }
             
             showToast(`Filtered to ${stage} stage`, 'info');
+        };
+
+        window.clearStageFilter = function() {
+            document.getElementById('filterStage').value = '';
+            applyFilters();
+            
+            showToast('Filter cleared', 'success');
         };
 
         function updatePreview() {
