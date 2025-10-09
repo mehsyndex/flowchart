@@ -2518,11 +2518,12 @@
                                 </div>
                             `;
                         } else {
-                            html += `
+                             html += `
                                 <div class="flow-connection">
                                     <span class="flow-connection-arrow">↓</span>
                                     ${conn.label ? `<span class="flow-connection-label">${conn.label}:</span>` : ''}
                                     <span class="flow-connection-target">${targetNumber ? '['+targetNumber+'] ' : ''}${targetTitle}</span>
+                                    ${conn.description ? `<div style="font-size: 11px; color: #888; font-style: italic; margin-top: 4px;">${conn.description}</div>` : ''}
                                 </div>
                             `;
                         }
