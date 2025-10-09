@@ -3702,148 +3702,169 @@ Version: 1.0
             const firstNodeId = startNodeId || (nodes.length > 0 ? nodes[0].id : null);
             
             return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Flowchart</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f7fa;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .flowchart-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.1);
-            max-width: 700px;
-            width: 100%;
-            overflow: hidden;
-        }
-        .banner {
-            width: 100%;
-            max-height: 250px;
-            object-fit: cover;
-        }
-        .content {
-            padding: 40px;
-            text-align: center;
-        }
-        h1 {
-            font-size: 28px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        p {
-            font-size: 16px;
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-        .buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        button {
-            padding: 14px 28px;
-            background: #2d5f8d;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-width: 120px;
-        }
-        button:hover {
-            background: #1e4466;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(45,95,141,0.3);
-        }
-        button.secondary {
-            background: #6b7280;
-        }
-        button.secondary:hover {
-            background: #4b5563;
-        }
-    </style>
-</head>
-<body>
-    <div class="flowchart-container">
-        ${bannerTag}
-        <div class="content" id="content"></div>
-    </div>
-    <script>
-        const flowData = ${JSON.stringify(nodes)};
-        let history = [];
-        let currentNodeId = '${firstNodeId}';
-
-        function render() {
-            const node = flowData.find(n => n.id === currentNodeId);
-            if (!node) return;
-
-            let buttonsHtml = '';
-            
-            if (node.connections.length === 0 || node.connections.some(c => c.target === 'END')) {
-                buttonsHtml = '<button onclick="startOver()" class="secondary">Start Over</button>';
-            } else {
-                if (history.length > 0) {
-                    buttonsHtml += '<button onclick="goBack()" class="secondary">Back</button>';
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Interactive Flowchart</title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
                 }
-                
-                if (node.type === 'decision') {
-                    // Decision nodes show labeled branch buttons
-                    node.connections.forEach(conn => {
-                        buttonsHtml += '<button onclick="navigate(\'' + conn.target + '\')">' + conn.label + '</button>';
-                    });
-                } else if (node.connections.length > 0) {
-                    buttonsHtml += '<button onclick="navigate(\'' + node.connections[0].target + '\')">Next</button>';
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    background: #f5f7fa;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
                 }
-            }
+                .flowchart-container {
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+                    max-width: 700px;
+                    width: 100%;
+                    overflow: hidden;
+                }
+                .banner {
+                    width: 100%;
+                    max-height: 250px;
+                    object-fit: cover;
+                }
+                .content {
+                    padding: 40px;
+                    text-align: center;
+                }
+                h1 {
+                    font-size: 28px;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 20px;
+                }
+                p {
+                    font-size: 16px;
+                    color: #666;
+                    line-height: 1.6;
+                    margin-bottom: 30px;
+                }
+                .buttons {
+                    display: flex;
+                    gap: 12px;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+                button {
+                    padding: 14px 28px;
+                    background: #2d5f8d;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 15px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    min-width: 120px;
+                }
+                button:hover {
+                    background: #1e4466;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(45,95,141,0.3);
+                }
+                button.secondary {
+                    background: #6b7280;
+                }
+                button.secondary:hover {
+                    background: #4b5563;
+                }
+                .connection-note {
+                    font-size: 13px;
+                    color: #888;
+                    font-style: italic;
+                    margin-top: 15px;
+                    padding: 10px;
+                    background: #f8f9fa;
+                    border-radius: 4px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="flowchart-container">
+                ${bannerTag}
+                <div class="content" id="content"></div>
+            </div>
+            <script>
+                const flowData = ${JSON.stringify(nodes)};
+                let history = [];
+                let currentNodeId = '${firstNodeId}';
 
-            const descriptionHtml = (node.type !== 'decision' && node.description) ? '<p>' + node.description + '</p>' : '';
+                function render() {
+                    const node = flowData.find(n => n.id === currentNodeId);
+                    if (!node) return;
 
-            document.getElementById('content').innerHTML = '<h1>' + node.title + '</h1>' + descriptionHtml + '<div class="buttons">' + buttonsHtml + '</div>';
-        }
+                    let buttonsHtml = '';
+                    let connectionNote = '';
+                    
+                    // Check if this is an endpoint
+                    const allConnectionsEnd = node.connections.length > 0 && node.connections.every(c => c.target === 'END');
+                    
+                    if (node.connections.length === 0 || allConnectionsEnd) {
+                        buttonsHtml = '<button onclick="startOver()" class="secondary">Start Over</button>';
+                    } else {
+                        if (history.length > 0) {
+                            buttonsHtml += '<button onclick="goBack()" class="secondary">Back</button>';
+                        }
+                        
+                        if (node.type === 'decision') {
+                            node.connections.forEach(conn => {
+                                const targetId = conn.target;
+                                const label = conn.label || 'Continue';
+                                buttonsHtml += '<button onclick="navigate(\\''+targetId+'\\')">'+label+'</button>';
+                            });
+                        } else if (node.connections.length > 0) {
+                            const conn = node.connections[0];
+                            buttonsHtml += '<button onclick="navigate(\\''+conn.target+'\\')">Next</button>';
+                            if (conn.description) {
+                                connectionNote = '<div class="connection-note">'+conn.description+'</div>';
+                            }
+                        }
+                    }
 
-        function navigate(targetId) {
-            if (targetId === 'END') return;
-            history.push(currentNodeId);
-            currentNodeId = targetId;
-            render();
-        }
+                    const descriptionHtml = (node.type !== 'decision' && node.description) ? '<p>'+node.description+'</p>' : '';
 
-        function goBack() {
-            if (history.length > 0) {
-                currentNodeId = history.pop();
+                    document.getElementById('content').innerHTML = '<h1>'+node.title+'</h1>'+descriptionHtml+'<div class="buttons">'+buttonsHtml+'</div>'+connectionNote;
+                }
+
+                function navigate(targetId) {
+                    if (targetId === 'END') {
+                        document.getElementById('content').innerHTML = '<h1>End of Flow</h1><p>You have reached the end of this path.</p><div class="buttons"><button onclick="startOver()" class="secondary">Start Over</button></div>';
+                        return;
+                    }
+                    history.push(currentNodeId);
+                    currentNodeId = targetId;
+                    render();
+                }
+
+                function goBack() {
+                    if (history.length > 0) {
+                        currentNodeId = history.pop();
+                        render();
+                    }
+                }
+
+                function startOver() {
+                    history = [];
+                    currentNodeId = '${firstNodeId}';
+                    render();
+                }
+
                 render();
-            }
-        }
-
-        function startOver() {
-            history = [];
-            currentNodeId = '${firstNodeId}';
-            render();
-        }
-
-        render();
-    <\/script>
-</body>
-</html>`;
+            </script>
+        </body>
+        </html>`;
         }
 
         // Initialize - load from localStorage
